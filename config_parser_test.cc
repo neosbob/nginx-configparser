@@ -104,6 +104,10 @@ TEST_F(NginxConfigParserTest, Comment_etc) {
 
     EXPECT_NE(1, Helper("# server { listen 100; }}"));
 
+    EXPECT_NE(1, Helper("# test string;"));
+
+    //EXPECT_NE(1, Helper("server { listen; }"));
+
 }
 
 class NginxConfigStatementTest : public testing::Test {
