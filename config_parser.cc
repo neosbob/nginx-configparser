@@ -128,7 +128,8 @@ NginxConfigParser::TokenType NginxConfigParser::ParseToken(std::istream* input,
         *value += c;
         continue;
       case TOKEN_STATE_TOKEN_TYPE_NORMAL:
-        if (c == ' ' || c == '\t' || c == '\n' || c == '\t' ||
+        //bug: same condition appears twice '\t'
+        if (c == ' ' || c == '\t' || c == '\n' || 
             c == ';' || c == '{' || c == '}') {
           input->unget();
           return TOKEN_TYPE_NORMAL;
@@ -152,6 +153,8 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
   config_stack.push(config);
   TokenType last_token_type = TOKEN_TYPE_START;
   TokenType token_type;
+  bool flag_block_start = false;
+
   while (true) {
     std::string token;
     token_type = ParseToken(config_file, &token);
@@ -194,21 +197,37 @@ bool NginxConfigParser::Parse(std::istream* config_file, NginxConfig* config) {
         // Error.
         break;
       }
+      //reset flag to false in case of new block
+      flag_block_start = false;
+
       NginxConfig* const new_config = new NginxConfig;
       config_stack.top()->statements_.back().get()->child_block_.reset(
           new_config);
       config_stack.push(new_config);
+
+      //fix to bug involving not needing ending bracket
+      flag_block_start = true;
+
     } else if (token_type == TOKEN_TYPE_END_BLOCK) {
-      if (last_token_type != TOKEN_TYPE_STATEMENT_END) {
+      if (last_token_type != TOKEN_TYPE_STATEMENT_END && flag_block_start == true) {
         // Error.
         break;
       }
       config_stack.pop();
+
     } else if (token_type == TOKEN_TYPE_EOF) {
+      //Error on this if statement; allows for block bugs
+      //even if brackets aren't paired
       if (last_token_type != TOKEN_TYPE_STATEMENT_END &&
           last_token_type != TOKEN_TYPE_END_BLOCK) {
         // Error.
-        break;
+          break;
+        }
+      else if (last_token_type == TOKEN_TYPE_STATEMENT_END) {
+          if(last_token_type != TOKEN_TYPE_END_BLOCK && flag_block_start
+            == true){
+              break;
+          }
       }
       return true;
     } else {
