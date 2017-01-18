@@ -84,7 +84,7 @@ TEST_F(NginxConfigParserTest, ExtraBracket) {
 
 
     //Error here, For some reason not ending with a "}" passes
-    EXPECT_NE(0, Helper("server { listen 100;"));
+    EXPECT_NE(1, Helper("server { listen 100;"));
 
 }
 
@@ -110,20 +110,17 @@ class NginxConfigStatementTest : public testing::Test {
 
     protected:
 
-    bool Helper() {
-
-
-    }
-
     NginxConfigParser parse;
     NginxConfig out_config_;
-
-
 
 };
 
 TEST_F(NginxConfigStatementTest, ToString2) {
-    
+    NginxConfigStatement statement;
+    statement.tokens_.push_back("test");
+    statement.tokens_.push_back("string");
+
+    EXPECT_EQ(statement.ToString(0), "test string;\n");
 
 }
 
